@@ -1,0 +1,19 @@
+{
+  "name": "hermes-data-quality-agent",
+  "version": "0.1.0",
+  "description": "Hermes-orchestrated media data quality gate for robotics and multimodal dataset submissions",
+  "main": "src/server.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "node --watch src/server.js",
+    "nvidia:check": "node scripts/check-nvidia.js",
+    "bitdeer:check": "node scripts/check-bitdeer.js",
+    "asr:check": "node scripts/check-asr.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "dotenv": "^17.4.0",
+    "express": "^5.2.1"
+  }
+}

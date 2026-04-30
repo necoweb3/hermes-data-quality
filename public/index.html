@@ -1,0 +1,208 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Hermes Data Quality Agent</title>
+    <link rel="stylesheet" href="/styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <div class="side-brand">
+          <div class="brand-mark">HQ</div>
+          <div>
+            <strong>Hermes Quality</strong>
+            <span>Dataset intake gate</span>
+          </div>
+        </div>
+
+        <div class="status-strip">
+          <span id="healthDot" class="status-dot"></span>
+          <span id="healthText">Checking system</span>
+        </div>
+
+        <section class="panel task-library">
+          <div class="section-head">
+            <h2>Collection Tasks</h2>
+          </div>
+          <div id="taskList" class="task-list"></div>
+        </section>
+
+        <section class="panel task-detail-panel">
+          <div class="section-head">
+            <h2>Task Details</h2>
+          </div>
+          <div id="activeTaskDetail" class="task-detail"></div>
+        </section>
+      </aside>
+
+      <main class="workspace">
+        <header class="dashboard-header">
+          <div>
+            <p class="eyebrow">Robotics and multimodal data QA</p>
+            <h1 id="activeTitle">Loading task</h1>
+            <p class="header-subtitle">Hermes plans collection tasks, reads the model evidence, and routes every submission with auditable reasoning.</p>
+          </div>
+          <nav class="dashboard-tabs" aria-label="Workspace views">
+            <button class="active" type="button" data-view-tab="setup">Setup</button>
+            <button type="button" data-view-tab="analyze">Analyze</button>
+            <button type="button" data-view-tab="review">Review Queue</button>
+          </nav>
+        </header>
+
+        <section id="setupView" class="view-panel active" data-view-panel="setup">
+          <div class="builder-grid">
+            <div class="panel planner-panel">
+              <div class="section-head">
+                <h2>Hermes Task Planner</h2>
+                <button id="taskPlanButton" class="secondary-button" type="button">Plan Task</button>
+              </div>
+              <div class="task-planner">
+                <label>
+                  <span>Dataset request</span>
+                  <textarea id="taskPlanInput" rows="4" placeholder="Describe the dataset you need. Example: I need POV parkour videos where hands and legs are visible."></textarea>
+                </label>
+                <div id="taskPlanStatus" class="planner-status"></div>
+              </div>
+            </div>
+
+            <div class="panel create-panel">
+              <div class="section-head">
+                <h2>Create Task</h2>
+                <button class="secondary-button" type="submit" form="customTaskForm">Create Task</button>
+              </div>
+              <form id="customTaskForm" class="task-form">
+                <label>
+                  <span>Name</span>
+                  <input name="name" type="text" placeholder="POV parkour videos" required />
+                </label>
+                <label>
+                  <span>Media</span>
+                  <select name="mediaKind">
+                    <option value="video">Video</option>
+                    <option value="image">Image</option>
+                    <option value="audio">Audio</option>
+                  </select>
+                </label>
+                <label class="wide">
+                  <span>Objective</span>
+                  <textarea name="objective" rows="3" placeholder="Collect first-person clips where the requested action and body parts are clearly visible." required></textarea>
+                </label>
+                <label>
+                  <span>Must show</span>
+                  <input name="requiredSignals" type="text" placeholder="first_person_pov,hands_visible,legs_visible" />
+                </label>
+                <label>
+                  <span>Review if seen</span>
+                  <input name="privacySignals" type="text" placeholder="identifiable_faces,license_plates,minor_present" />
+                </label>
+                <div class="form-grid wide">
+                  <label>
+                    <span>Min sec</span>
+                    <input name="minDurationSec" type="number" value="5" min="0" />
+                  </label>
+                  <label>
+                    <span>Max sec</span>
+                    <input name="maxDurationSec" type="number" value="60" min="1" />
+                  </label>
+                  <label>
+                    <span>Min width</span>
+                    <input name="minWidth" type="number" value="720" min="0" />
+                  </label>
+                  <label>
+                    <span>Min height</span>
+                    <input name="minHeight" type="number" value="480" min="0" />
+                  </label>
+                </div>
+                <label id="spokenPromptField" class="wide hidden">
+                  <span>Exact spoken prompt</span>
+                  <input name="promptText" type="text" placeholder="Exact sentence the speaker must read" />
+                </label>
+              </form>
+            </div>
+          </div>
+        </section>
+
+        <section id="analyzeView" class="view-panel" data-view-panel="analyze">
+          <div class="analysis-grid">
+            <div class="panel upload-panel">
+              <div class="section-head">
+                <h2>Submission</h2>
+                <button id="analyzeButton" class="primary-button" disabled>Analyze</button>
+              </div>
+
+              <label id="dropZone" class="drop-zone">
+                <input id="fileInput" type="file" accept="image/*,video/*,audio/*" />
+                <span id="dropTitle" class="drop-title">Select media file</span>
+                <span id="fileMeta" class="drop-meta">Image, video, or audio</span>
+              </label>
+
+              <div id="preview" class="preview empty">
+                <span>No file selected</span>
+              </div>
+
+              <div id="signalPanel" class="signal-panel"></div>
+            </div>
+
+            <div class="panel live-panel">
+              <div class="section-head">
+                <h2>Live Agent Console</h2>
+                <span id="liveBadge" class="badge neutral">Idle</span>
+              </div>
+              <ol id="liveConsole" class="timeline live console-timeline">
+                <li class="pending">
+                  <strong>Waiting for analysis</strong>
+                  <span>Upload media and run the active collection task.</span>
+                </li>
+              </ol>
+            </div>
+
+            <div class="panel result-panel">
+              <div class="section-head">
+                <h2>Agent Verdict</h2>
+                <span id="verdictBadge" class="badge neutral">Idle</span>
+              </div>
+
+              <div class="score-row">
+                <div class="score-ring">
+                  <span id="scoreValue">0</span>
+                </div>
+                <div>
+                  <h3 id="summaryTitle">Awaiting submission</h3>
+                  <p id="summaryText">The agent run will appear after analysis.</p>
+                </div>
+              </div>
+
+              <div id="hermesReview" class="hermes-review"></div>
+              <div id="decisionMatrix" class="decision-matrix"></div>
+              <div id="evidencePack" class="evidence-pack"></div>
+              <div id="checks" class="checks"></div>
+              <div id="modelSignals" class="model-signals"></div>
+            </div>
+          </div>
+        </section>
+
+        <section id="reviewView" class="view-panel" data-view-panel="review">
+          <div class="ops-grid">
+            <div class="panel">
+              <div class="section-head">
+                <h2>Final Timeline</h2>
+              </div>
+              <ol id="timeline" class="timeline"></ol>
+            </div>
+
+            <div class="panel">
+              <div class="section-head">
+                <h2>Human Review Queue</h2>
+              </div>
+              <div id="reviewQueue" class="review-queue"></div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>
