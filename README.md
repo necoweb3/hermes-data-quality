@@ -8,7 +8,13 @@ The project was built for the Hermes Agent Creative Hackathon. It is a working d
 
 More data collection and robotic data training networks are appearing. Examples include [Hub](https://hub.xyz/), [PSDN](https://psdn.ai/), [Zen-O](https://zen-o.xyz/), and [Numo Labs](https://numolabs.ai/). These systems ask contributors for specific training data:
 
-- first-person action videos
+Decentralized data collection and robotic training networks have been rapidly emerging, especially within creator-driven platforms.
+
+[Hub](https://hub.xyz/), [PSDN](https://psdn.ai/), [Zen-O](https://zen-o.xyz/), and [Numo Labs](https://numolabs.ai/).are building next-generation infrastructure that leverages user contributions to collect multimodal data (video, image, audio) and feed AI training pipelines.
+
+In these systems, users are not only providing data, but also becoming part of the model development process through contributions like bandwidth, compute, or labeled datasets.
+
+- first-person videos
 - object manipulation clips
 - prompted speech recordings
 - images with requested people, places, or objects
@@ -63,46 +69,93 @@ Specialized models do the media understanding. Hermes turns their outputs into a
 
 ```mermaid
 flowchart LR
-  A["Dataset operator writes request"] --> B["Hermes Task Planner"]
-  B --> C["Structured collection task"]
-  C --> D["Contributor uploads media"]
-  D --> E["Browser evidence extraction"]
-  E --> F["Server verdict engine"]
-  F --> G["Vision, ASR, safety, PII, policy models"]
-  G --> H["Model signals and notes"]
-  F --> I["Deterministic checks"]
-  H --> J["Hermes Data Quality Gate skill"]
-  I --> J
-  J --> K["Reviewer brief and routing"]
-  K --> L{"Final route"}
-  L --> M["Accept"]
-  L --> N["Reject"]
-  L --> O["Human review queue"]
+  operator["Dataset Operator<br/>Natural language request"]
+  hermesPlan["Hermes Task Planner<br/>turns request into gates"]
+  task["Collection Task<br/>media type, must-show signals, review flags"]
+  upload["Contributor Submission<br/>image, video, or audio"]
+  browser["Browser Evidence Pack<br/>metrics, hashes, frames, audio prep"]
+  gates["Deterministic Gates<br/>duration, resolution, audio level, duplicates"]
+  models["Specialized Models<br/>vision, ASR, safety, PII, policy"]
+  signals["Evidence Layer<br/>semantic signals, transcript, model notes"]
+  hermesReview["Hermes Data Quality Gate<br/>review orchestrator"]
+  route{"Final Route"}
+  accept["Accept<br/>ready for intake"]
+  reject["Reject<br/>clear mismatch or hard failure"]
+  review["Human Review<br/>ambiguous or sensitive evidence"]
+
+  operator --> hermesPlan --> task --> upload --> browser
+  browser --> gates
+  browser --> models
+  gates --> hermesReview
+  models --> signals --> hermesReview
+  task --> hermesReview
+  hermesReview --> route
+  route --> accept
+  route --> reject
+  route --> review
+
+  classDef human fill:#f7f9fb,stroke:#8ea0b2,color:#111827
+  classDef hermes fill:#e7f5f2,stroke:#0f766e,color:#0f2f2b
+  classDef evidence fill:#e6f0fb,stroke:#245e9d,color:#102a43
+  classDef decision fill:#fff1d8,stroke:#a35f00,color:#4a2a00
+  classDef reject fill:#ffe5df,stroke:#b42318,color:#5f130d
+  classDef accept fill:#dff4e5,stroke:#16803c,color:#0d3f20
+
+  class operator,upload human
+  class hermesPlan,hermesReview hermes
+  class browser,gates,models,signals evidence
+  class route decision
+  class reject reject
+  class accept accept
+
 ```
 
 ## Runtime Flow
 
 ```mermaid
 sequenceDiagram
-  participant UI as Browser UI
+  autonumber
+  actor Operator
+  participant UI as Browser Dashboard
   participant API as Express API
-  participant VLM as Vision model
+  participant Vision as Vision Model
   participant ASR as Parakeet ASR
-  participant NV as NVIDIA safety stack
-  participant H as Hermes Agent
-  participant Store as Local store
+  participant Safety as NVIDIA Safety Stack
+  participant Hermes as Hermes Agent
+  participant Store as Local Store
 
-  UI->>UI: Extract media metrics and evidence
+  Operator->>UI: Create or plan a collection task
+  UI->>Hermes: Ask Hermes Task Planner for gates
+  Hermes-->>UI: Return structured task plan
+
+  Operator->>UI: Upload media submission
+  UI->>UI: Extract metrics, frames, hashes, audio evidence
   UI->>API: POST /api/analyze
-  API->>VLM: Describe visual scene, if image/video
-  API->>VLM: Check task compliance, if image/video
-  API->>ASR: Transcribe speech, if audio
-  API->>NV: Run safety, PII, and policy checks when configured
-  API->>API: Score technical and semantic gates
-  API->>H: Send task, checks, model notes, transcript, and draft verdict
-  H->>API: Return JSON reviewer brief and route recommendation
-  API->>Store: Save submission and audit trail
-  API->>UI: Return final verdict
+
+  API->>API: Run deterministic quality gates
+
+  alt Image or video
+    API->>Vision: Task-agnostic scene observation
+    Vision-->>API: Observed scene, subjects, actions
+    API->>Vision: Task-aware compliance check
+    Vision-->>API: Required signal results
+  else Audio
+    API->>ASR: Transcribe prepared WAV evidence
+    ASR-->>API: Transcript
+    API->>API: Compare transcript with exact prompt
+  end
+
+  API->>Safety: Attach safety, PII, and policy evidence
+  Safety-->>API: Risk signals and policy notes
+
+  API->>Hermes: Send task, checks, model notes, transcript, draft verdict
+  Hermes-->>API: Reviewer brief, contributor feedback, route recommendation
+
+  API->>Store: Save audit trail and submission result
+  API-->>UI: Return final verdict
+
+  UI->>Operator: Show live console, Hermes review, and final route
+
 ```
 
 ## Model Stack
