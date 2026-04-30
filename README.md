@@ -1,3 +1,5 @@
+**There might be some bugs in the UI. Actually, a UI isn't necessary; I just prepared a rough UI to demonstrate how the infrastructure works.**
+
 # Hermes Quality
 
 Hermes Quality is a Hermes-orchestrated quality gate for multimodal training-data submissions. It screens video, image, and audio files before they enter a dataset pipeline or a human review queue.
